@@ -78,9 +78,7 @@ Then disable Demo Mode and run the application.
 Lantern/
 ├── app.py
 ├── index.html
-├── requirements.txt
 ├── README.md
-└── .gitignore
 ```
 
 ## Features
