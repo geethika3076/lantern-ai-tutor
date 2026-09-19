@@ -1,0 +1,1231 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Lantern — AI Micro-Tutor</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+
+<style>
+
+:root {
+  --board: #1B3A2F;
+  --board-dark: #12251D;
+  --board-line: rgba(245,241,230,0.14);
+  --chalk: #F5F1E6;
+  --gold: #E8B94D;
+  --coral: #D9694F;
+  --paper: #FBF8F2;
+  --ink: #21281F;
+  --ink-soft: #5B6259;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', sans-serif;
+  background: var(--board);
+  color: var(--chalk);
+  min-height: 100vh;
+}
+
+.app {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 20px 16px 40px;
+}
+
+.brand {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.brand h1 {
+  font-family: 'Fraunces', serif;
+  font-weight: 700;
+  font-size: 28px;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.brand span {
+  color: var(--gold);
+}
+
+.tagline {
+  font-size: 13px;
+  color: rgba(245,241,230,0.65);
+  margin: 0 0 20px;
+  line-height: 1.5;
+}
+
+
+/* SUBJECT PICKER */
+
+.subjects {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.subject-btn {
+  flex: 1;
+  background: transparent;
+  border: 1px solid var(--board-line);
+  color: var(--chalk);
+  padding: 10px 6px;
+  border-radius: 8px;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.subject-btn:hover:not(:disabled) {
+  border-color: var(--gold);
+}
+
+.subject-btn.active {
+  background: var(--gold);
+  color: var(--board-dark);
+  border-color: var(--gold);
+}
+
+.subject-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+
+/* MASTERY */
+
+.mastery-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 22px;
+}
+
+.mastery-item {
+  flex: 1;
+  background: var(--board-dark);
+  border-radius: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--board-line);
+}
+
+.mastery-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: rgba(245,241,230,0.55);
+  margin-bottom: 6px;
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+.mastery-bar-track {
+  height: 5px;
+  background: rgba(245,241,230,0.12);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.mastery-bar-fill {
+  height: 100%;
+  background: var(--gold);
+  border-radius: 3px;
+  transition: width 0.5s ease;
+}
+
+
+/* QUESTION CARD */
+
+.card {
+  background: var(--paper);
+  color: var(--ink);
+  border-radius: 14px;
+  padding: 22px 20px;
+  min-height: 220px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+}
+
+.card-eyebrow {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  color: var(--ink-soft);
+  margin-bottom: 10px;
+}
+
+.question-text {
+  font-family: 'Fraunces', serif;
+  font-size: 19px;
+  font-weight: 600;
+  line-height: 1.4;
+  margin: 0 0 18px;
+}
+
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: auto;
+}
+
+.option-btn {
+  text-align: left;
+  background: #fff;
+  border: 1.5px solid rgba(33,40,31,0.14);
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-family: 'Inter', sans-serif;
+  font-size: 14.5px;
+  color: var(--ink);
+  cursor: pointer;
+  transition: border-color 0.12s, transform 0.08s;
+}
+
+.option-btn:hover:not(:disabled) {
+  border-color: var(--ink-soft);
+  transform: translateY(-1px);
+}
+
+.option-btn:disabled {
+  cursor: default;
+}
+
+.option-btn.correct {
+  background: #E9F3EA;
+  border-color: #4C8B57;
+}
+
+.option-btn.incorrect {
+  background: #FBEAE6;
+  border-color: var(--coral);
+}
+
+
+/* LOADING */
+
+.loading-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--ink-soft);
+  font-size: 14px;
+  margin: auto 0;
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(33,40,31,0.2);
+  border-top-color: var(--ink);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+
+/* FEEDBACK */
+
+.feedback {
+  margin-top: 16px;
+  background: var(--board-dark);
+  border: 1px solid var(--board-line);
+  border-radius: 12px;
+  padding: 16px;
+  animation: rise 0.25s ease;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.feedback-tag {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  margin-bottom: 8px;
+}
+
+.feedback-tag.correct-tag {
+  color: #8FD19E;
+}
+
+.feedback-tag.incorrect-tag {
+  color: var(--coral);
+}
+
+.feedback-text {
+  font-size: 14px;
+  line-height: 1.55;
+  color: rgba(245,241,230,0.92);
+}
+
+.next-btn {
+  margin-top: 14px;
+  width: 100%;
+  background: var(--gold);
+  color: var(--board-dark);
+  border: none;
+  padding: 12px;
+  border-radius: 9px;
+  font-weight: 700;
+  font-size: 14px;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+}
+
+.next-btn:hover {
+  opacity: 0.9;
+}
+
+
+/* EMPTY STATE */
+
+.empty-state {
+  text-align: center;
+  padding: 40px 10px;
+  color: var(--ink-soft);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+
+/* ERROR */
+
+.error-box {
+  background: #FBEAE6;
+  color: #7A2E1E;
+  border-radius: 10px;
+  padding: 14px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+
+/* MODE INDICATOR */
+
+.mode-indicator {
+  text-align: center;
+  margin-top: 18px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  color: rgba(245,241,230,0.45);
+  letter-spacing: 0.04em;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="app">
+
+  <!-- BRAND -->
+
+  <div class="brand">
+
+```
+<h1>
+  Lantern<span>.</span>
+</h1>
+```
+
+  </div>
+
+  <p class="tagline">
+
+```
+An AI tutor that finds exactly where you're stuck —
+then meets you there. Pick a subject to begin.
+```
+
+  </p>
+
+  <!-- SUBJECTS -->
+
+  <div
+    class="subjects"
+    id="subjects"
+  ></div>
+
+  <!-- MASTERY -->
+
+  <div
+    class="mastery-row"
+    id="masteryRow"
+  ></div>
+
+  <!-- QUESTION CARD -->
+
+  <div
+    class="card"
+    id="card"
+  >
+
+```
+<div class="empty-state">
+
+  Pick a subject above to get your first question.
+
+</div>
+```
+
+  </div>
+
+  <!-- MODE -->
+
+  <div class="mode-indicator">
+
+```
+LANTERN · SDG 4 · QUALITY EDUCATION
+```
+
+  </div>
+
+</div>
+
+<script>
+
+
+/* ============================================================
+   FLASK BACKEND
+   ============================================================ */
+
+const API_BASE = "http://localhost:5000";
+
+
+/* ============================================================
+   SUBJECTS
+   ============================================================ */
+
+const SUBJECTS = [
+  "Math",
+  "Science",
+  "English"
+];
+
+
+/* ============================================================
+   APPLICATION STATE
+   ============================================================ */
+
+const state = {
+
+  subject: null,
+
+  difficulty: {},
+
+  mastery: {},
+
+  history: {},
+
+  current: null,
+
+  answered: false,
+
+  loading: false
+
+};
+
+
+/* ============================================================
+   INITIALIZE STATE
+   ============================================================ */
+
+SUBJECTS.forEach(subject => {
+
+  state.difficulty[subject] = 3;
+
+  state.mastery[subject] = 20;
+
+  state.history[subject] = [];
+
+});
+
+
+/* ============================================================
+   RENDER SUBJECT BUTTONS
+   ============================================================ */
+
+function renderSubjects() {
+
+  const element =
+    document.getElementById("subjects");
+
+  element.innerHTML = "";
+
+
+  SUBJECTS.forEach(subject => {
+
+    const button =
+      document.createElement("button");
+
+    button.className =
+      "subject-btn" +
+      (
+        state.subject === subject
+          ? " active"
+          : ""
+      );
+
+
+    button.textContent =
+      subject;
+
+
+    button.disabled =
+      state.loading;
+
+
+    button.onclick = () => {
+
+      selectSubject(subject);
+
+    };
+
+
+    element.appendChild(button);
+
+  });
+
+}
+
+
+/* ============================================================
+   RENDER MASTERY
+   ============================================================ */
+
+function renderMastery() {
+
+  const element =
+    document.getElementById("masteryRow");
+
+  element.innerHTML = "";
+
+
+  SUBJECTS.forEach(subject => {
+
+    const item =
+      document.createElement("div");
+
+    item.className =
+      "mastery-item";
+
+
+    item.innerHTML = `
+
+      <div class="mastery-label">
+
+        ${subject}
+
+      </div>
+
+
+      <div class="mastery-bar-track">
+
+        <div
+          class="mastery-bar-fill"
+          style="width:${state.mastery[subject]}%"
+        ></div>
+
+      </div>
+
+    `;
+
+
+    element.appendChild(item);
+
+  });
+
+}
+
+
+/* ============================================================
+   LOADING CARD
+   ============================================================ */
+
+function renderLoadingCard(message) {
+
+  document.getElementById("card").innerHTML = `
+
+    <div class="loading-line">
+
+      <div class="spinner"></div>
+
+      ${message}
+
+    </div>
+
+  `;
+
+}
+
+
+/* ============================================================
+   ERROR CARD
+   ============================================================ */
+
+function renderErrorCard(message) {
+
+  document.getElementById("card").innerHTML = `
+
+    <div class="error-box">
+
+      ${message}
+
+    </div>
+
+  `;
+
+}
+
+
+/* ============================================================
+   SELECT SUBJECT
+   ============================================================ */
+
+async function selectSubject(subject) {
+
+  state.subject = subject;
+
+  state.answered = false;
+
+  renderSubjects();
+
+  await fetchQuestion();
+
+}
+
+
+/* ============================================================
+   FETCH QUESTION FROM FLASK
+   ============================================================ */
+
+async function fetchQuestion() {
+
+  state.loading = true;
+
+  state.answered = false;
+
+  renderSubjects();
+
+  renderLoadingCard(
+    "Lantern is preparing your next question…"
+  );
+
+
+  const subject =
+    state.subject;
+
+
+  const difficulty =
+    state.difficulty[subject];
+
+
+  const history =
+    state.history[subject].slice(-4);
+
+
+  try {
+
+    const response = await fetch(
+
+      `${API_BASE}/api/question`,
+
+      {
+
+        method: "POST",
+
+        headers: {
+
+          "Content-Type":
+            "application/json"
+
+        },
+
+        body: JSON.stringify({
+
+          subject: subject,
+
+          difficulty: difficulty,
+
+          history: history
+
+        })
+
+      }
+
+    );
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        `Server returned ${response.status}`
+      );
+
+    }
+
+
+    const question =
+      await response.json();
+
+
+    if (question.error) {
+
+      throw new Error(
+        question.error
+      );
+
+    }
+
+
+    if (
+      !question.question ||
+      !Array.isArray(question.options) ||
+      question.options.length !== 4
+    ) {
+
+      throw new Error(
+        "Invalid question received from server."
+      );
+
+    }
+
+
+    state.current =
+      question;
+
+
+    state.loading =
+      false;
+
+
+    renderSubjects();
+
+    renderQuestion();
+
+  }
+
+
+  catch (error) {
+
+    state.loading =
+      false;
+
+
+    renderSubjects();
+
+
+    renderErrorCard(
+
+      "Could not connect to Lantern's backend. " +
+      "Make sure app.py is running at " +
+      "http://localhost:5000."
+
+    );
+
+
+    console.error(
+      "Question error:",
+      error
+    );
+
+  }
+
+}
+
+
+/* ============================================================
+   RENDER QUESTION
+   ============================================================ */
+
+function renderQuestion() {
+
+  const question =
+    state.current;
+
+
+  const card =
+    document.getElementById("card");
+
+
+  card.innerHTML = `
+
+    <div class="card-eyebrow">
+
+      ${state.subject}
+      ·
+      ${question.topic}
+      ·
+      ${question.difficultyLabel}
+
+    </div>
+
+
+    <div class="question-text">
+
+      ${question.question}
+
+    </div>
+
+
+    <div
+      class="options"
+      id="optionsList"
+    ></div>
+
+  `;
+
+
+  const optionsList =
+    document.getElementById(
+      "optionsList"
+    );
+
+
+  question.options.forEach(
+    (option, index) => {
+
+      const button =
+        document.createElement("button");
+
+
+      button.className =
+        "option-btn";
+
+
+      button.textContent =
+        option;
+
+
+      button.onclick = () => {
+
+        handleAnswer(index);
+
+      };
+
+
+      optionsList.appendChild(
+        button
+      );
+
+    }
+
+  );
+
+}
+
+
+/* ============================================================
+   HANDLE ANSWER
+   ============================================================ */
+
+async function handleAnswer(index) {
+
+  if (state.answered) {
+
+    return;
+
+  }
+
+
+  state.answered =
+    true;
+
+
+  const question =
+    state.current;
+
+
+  const subject =
+    state.subject;
+
+
+  const correct =
+    index === question.correctIndex;
+
+
+  /* ----------------------------------------------------------
+     SHOW ANSWER
+     ---------------------------------------------------------- */
+
+  document
+    .querySelectorAll(".option-btn")
+    .forEach((button, i) => {
+
+      button.disabled =
+        true;
+
+
+      if (
+        i === question.correctIndex
+      ) {
+
+        button.classList.add(
+          "correct"
+        );
+
+      }
+
+      else if (i === index) {
+
+        button.classList.add(
+          "incorrect"
+        );
+
+      }
+
+    });
+
+
+  /* ----------------------------------------------------------
+     UPDATE HISTORY
+     ---------------------------------------------------------- */
+
+  state.history[subject].push(
+
+    correct
+      ? "correct"
+      : "incorrect"
+
+  );
+
+
+  /* ----------------------------------------------------------
+     UPDATE MASTERY
+     ---------------------------------------------------------- */
+
+  if (correct) {
+
+    state.mastery[subject] =
+      Math.min(
+        100,
+        state.mastery[subject] + 8
+      );
+
+  }
+
+  else {
+
+    state.mastery[subject] =
+      Math.max(
+        0,
+        state.mastery[subject] - 4
+      );
+
+  }
+
+
+  renderMastery();
+
+
+  /* ----------------------------------------------------------
+     FEEDBACK LOADING
+     ---------------------------------------------------------- */
+
+  const card =
+    document.getElementById(
+      "card"
+    );
+
+
+  const feedbackBox =
+    document.createElement(
+      "div"
+    );
+
+
+  feedbackBox.className =
+    "feedback";
+
+
+  feedbackBox.innerHTML = `
+
+    <div
+      class="loading-line"
+      style="
+        color:rgba(245,241,230,0.7)
+      "
+    >
+
+      <div
+        class="spinner"
+        style="
+          border-color:rgba(245,241,230,0.25);
+          border-top-color:var(--gold);
+        "
+      ></div>
+
+      Personalizing your feedback…
+
+    </div>
+
+  `;
+
+
+  card.appendChild(
+    feedbackBox
+  );
+
+
+  /* ----------------------------------------------------------
+     SEND ANSWER TO FLASK
+     ---------------------------------------------------------- */
+
+  try {
+
+    const response = await fetch(
+
+      `${API_BASE}/api/feedback`,
+
+      {
+
+        method: "POST",
+
+        headers: {
+
+          "Content-Type":
+            "application/json"
+
+        },
+
+        body: JSON.stringify({
+
+          subject: subject,
+
+          question:
+            question.question,
+
+          options:
+            question.options,
+
+          correctIndex:
+            question.correctIndex,
+
+          chosenIndex:
+            index,
+
+          correct:
+            correct,
+
+          difficulty:
+            state.difficulty[subject]
+
+        })
+
+      }
+
+    );
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        `Server returned ${response.status}`
+      );
+
+    }
+
+
+    const result =
+      await response.json();
+
+
+    if (result.error) {
+
+      throw new Error(
+        result.error
+      );
+
+    }
+
+
+    /* --------------------------------------------------------
+       UPDATE DIFFICULTY
+       -------------------------------------------------------- */
+
+    if (
+      result.nextDifficulty === "harder"
+    ) {
+
+      state.difficulty[subject] =
+        Math.min(
+          5,
+          state.difficulty[subject] + 1
+        );
+
+    }
+
+
+    if (
+      result.nextDifficulty === "easier"
+    ) {
+
+      state.difficulty[subject] =
+        Math.max(
+          1,
+          state.difficulty[subject] - 1
+        );
+
+    }
+
+
+    /* --------------------------------------------------------
+       DISPLAY FEEDBACK
+       -------------------------------------------------------- */
+
+    feedbackBox.innerHTML = `
+
+      <div
+        class="feedback-tag
+        ${correct
+          ? "correct-tag"
+          : "incorrect-tag"}"
+      >
+
+        ${
+          correct
+            ? "✓ Correct"
+            : "✗ Not quite"
+        }
+
+      </div>
+
+
+      <div class="feedback-text">
+
+        ${result.feedback}
+
+      </div>
+
+
+      <button
+        class="next-btn"
+        id="nextBtn"
+      >
+
+        Next question
+
+      </button>
+
+    `;
+
+
+    document
+      .getElementById("nextBtn")
+      .onclick =
+        fetchQuestion;
+
+  }
+
+
+  catch (error) {
+
+    console.error(
+      "Feedback error:",
+      error
+    );
+
+
+    /* --------------------------------------------------------
+       LOCAL FALLBACK
+       -------------------------------------------------------- */
+
+    feedbackBox.innerHTML = `
+
+      <div
+        class="feedback-tag
+        ${correct
+          ? "correct-tag"
+          : "incorrect-tag"}"
+      >
+
+        ${
+          correct
+            ? "✓ Correct"
+            : "✗ Not quite"
+        }
+
+      </div>
+
+
+      <div class="feedback-text">
+
+        ${
+          correct
+            ? "Correct! Your answer is right."
+            : `Not quite. The correct answer is option ${question.correctIndex + 1}.`
+        }
+
+      </div>
+
+
+      <button
+        class="next-btn"
+        id="nextBtn"
+      >
+
+        Next question
+
+      </button>
+
+    `;
+
+
+    document
+      .getElementById("nextBtn")
+      .onclick =
+        fetchQuestion;
+
+  }
+
+}
+
+
+/* ============================================================
+   INITIAL PAGE RENDER
+   ============================================================ */
+
+renderSubjects();
+
+renderMastery();
+
+
+</script>
+
+</body>
+
+</html>
